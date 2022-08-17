@@ -1,15 +1,20 @@
 package com.sunnyweather.android.ui.weather
 
+import android.content.Context
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.card.MaterialCardView
 import com.sunnyweather.android.R
 import com.sunnyweather.android.logic.model.Weather
@@ -40,15 +45,46 @@ class WeatherActivity : AppCompatActivity() {
         viewModel.weatherLiveData.observe(this, Observer { result ->
             val weather = result.getOrNull()
             if (weather != null) {
-                Log.d("BUG", "$weather")
                 showWeatherInfo(weather)
             } else {
-                Log.d("BUG", "无法获取天气信息")
                 Toast.makeText(this, "无法获取天气信息", Toast.LENGTH_SHORT).show()
                 result.exceptionOrNull()?.printStackTrace()
             }
+            findViewById<SwipeRefreshLayout>(R.id.swipeRefresh).isRefreshing = false
         })
         viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+
+        findViewById<SwipeRefreshLayout>(R.id.swipeRefresh).setColorSchemeResources(R.color.teal_200)
+        refreshWeather()
+        findViewById<SwipeRefreshLayout>(R.id.swipeRefresh).setOnRefreshListener {
+            refreshWeather()
+        }
+
+        findViewById<Button>(R.id.navBtn).setOnClickListener {
+            findViewById<DrawerLayout>(R.id.drawerLayout).openDrawer(GravityCompat.START)
+        }
+
+        findViewById<DrawerLayout>(R.id.drawerLayout).addDrawerListener(object: DrawerLayout.DrawerListener{
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                val manager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                manager.hideSoftInputFromWindow(drawerView.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+            }
+
+            override fun onDrawerStateChanged(newState: Int) {
+            }
+
+        })
+    }
+
+    fun refreshWeather() {
+        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+        findViewById<SwipeRefreshLayout>(R.id.swipeRefresh).isRefreshing = true
     }
 
     private fun showWeatherInfo(weather: Weather) {
